@@ -1,6 +1,8 @@
 import cors from "cors";
 import express, { Application, Request, Response } from "express";
 import { StatusCodes } from "http-status-codes";
+import globalErrorHandler from "./middleware/globalErrorHandler";
+import notFound from "./middleware/notFound";
 
 const app: Application = express();
 
@@ -16,5 +18,10 @@ app.get("/", (_req: Request, res: Response) => {
     data: null,
   });
 });
+
+// Unmatched routes → 404, all errors → centralized handler (order matters:
+// these must be registered after every real route)
+app.use(notFound);
+app.use(globalErrorHandler);
 
 export default app;
