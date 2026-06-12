@@ -4,6 +4,7 @@ import { StatusCodes } from "http-status-codes";
 import globalErrorHandler from "./middleware/globalErrorHandler";
 import notFound from "./middleware/notFound";
 import { AuthRoutes } from "./modules/auth/auth.route";
+import { IssueRoutes } from "./modules/issue/issue.route";
 
 const app: Application = express();
 
@@ -22,6 +23,7 @@ app.get("/", (_req: Request, res: Response) => {
 
 // Feature modules
 app.use("/api/auth", AuthRoutes);
+app.use("/api/issues", IssueRoutes);
 
 // Unmatched routes → 404, all errors → centralized handler (order matters:
 // these must be registered after every real route)
