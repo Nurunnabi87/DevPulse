@@ -2,8 +2,8 @@
 
 A collaborative backend platform for software teams to report bugs, suggest features, and coordinate their resolution. Team members register as **contributors** or **maintainers**, log in to receive a JWT, and manage issues through a role-aware REST API.
 
-- **Live API:** _to be added after deployment_ (e.g. `https://devpulse.vercel.app`)
-- **Repository:** _your GitHub repo URL_
+- **Live API:** https://dev-pulse-azure-ten.vercel.app
+- **Repository:** https://github.com/Nurunnabi87/DevPulse
 
 ---
 
