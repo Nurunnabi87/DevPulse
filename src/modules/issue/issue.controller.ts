@@ -5,7 +5,10 @@ import AppError from "../../utils/AppError";
 import catchAsync from "../../utils/catchAsync";
 import sendResponse from "../../utils/sendResponse";
 import { IssueService } from "./issue.service";
-import { validateCreateIssue } from "./issue.validation";
+import {
+  parseIssueQuery,
+  validateCreateIssue,
+} from "./issue.validation";
 
 /** req.user is optional on the Request type; protected routes must have it. */
 const requireUser = (req: Request): IJwtPayload => {
@@ -27,4 +30,29 @@ const createIssue = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-export const IssueController = { createIssue };
+const getAllIssues = catchAsync(async (req: Request, res: Response) => {
+  const query = parseIssueQuery(req.query as Record<string, unknown>);
+  const issues = await IssueService.getAllIssues(query);
+
+  sendResponse(res, {
+    statusCode: StatusCodes.OK,
+    message: "Issues retrived successfully",
+    data: issues,
+  });
+});
+
+const getSingleIssue = catchAsync(async (req: Request, res: Response) => {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id) || id <= 0) {
+    throw new AppError(StatusCodes.BAD_REQUEST, "Invalid issue id");
+  }
+  const issue = await IssueService.getSingleIssue(id);
+
+  sendResponse(res, {
+    statusCode: StatusCodes.OK,
+    message: "Issue retrived successfully",
+    data: issue,
+  });
+});
+
+export const IssueController = { createIssue, getAllIssues, getSingleIssue };

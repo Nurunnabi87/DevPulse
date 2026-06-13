@@ -2,6 +2,7 @@ import { StatusCodes } from "http-status-codes";
 import AppError from "../../utils/AppError";
 import {
   ICreateIssuePayload,
+  IIssueQueryParams,
   ISSUE_STATUSES,
   ISSUE_TYPES,
   IUpdateIssuePayload,
@@ -51,6 +52,40 @@ export const validateCreateIssue = (body: unknown): ICreateIssuePayload => {
     title: (title as string).trim(),
     description: (description as string).trim(),
     type: type as ICreateIssuePayload["type"],
+  };
+};
+
+export const parseIssueQuery = (
+  query: Record<string, unknown>
+): IIssueQueryParams => {
+  const errors: string[] = [];
+  const { sort, type, status } = query;
+
+  // sort defaults to "newest"; only newest/oldest are accepted
+  let parsedSort: IIssueQueryParams["sort"] = "newest";
+  if (sort !== undefined) {
+    if (sort === "newest" || sort === "oldest") {
+      parsedSort = sort;
+    } else {
+      errors.push("sort must be either 'newest' or 'oldest'");
+    }
+  }
+
+  if (type !== undefined && !ISSUE_TYPES.includes(type as never)) {
+    errors.push("type must be either 'bug' or 'feature_request'");
+  }
+  if (status !== undefined && !ISSUE_STATUSES.includes(status as never)) {
+    errors.push("status must be one of 'open', 'in_progress', 'resolved'");
+  }
+
+  if (errors.length > 0) {
+    throw new AppError(StatusCodes.BAD_REQUEST, "Invalid query parameters", errors);
+  }
+
+  return {
+    sort: parsedSort,
+    type: type as IIssueQueryParams["type"],
+    status: status as IIssueQueryParams["status"],
   };
 };
 
