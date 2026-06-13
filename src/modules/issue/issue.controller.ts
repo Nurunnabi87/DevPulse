@@ -8,6 +8,7 @@ import { IssueService } from "./issue.service";
 import {
   parseIssueQuery,
   validateCreateIssue,
+  validateUpdateIssue,
 } from "./issue.validation";
 
 /** req.user is optional on the Request type; protected routes must have it. */
@@ -55,4 +56,25 @@ const getSingleIssue = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-export const IssueController = { createIssue, getAllIssues, getSingleIssue };
+const updateIssue = catchAsync(async (req: Request, res: Response) => {
+  const user = requireUser(req);
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id) || id <= 0) {
+    throw new AppError(StatusCodes.BAD_REQUEST, "Invalid issue id");
+  }
+  const payload = validateUpdateIssue(req.body);
+  const issue = await IssueService.updateIssue(id, payload, user);
+
+  sendResponse(res, {
+    statusCode: StatusCodes.OK,
+    message: "Issue updated successfully",
+    data: issue,
+  });
+});
+
+export const IssueController = {
+  createIssue,
+  getAllIssues,
+  getSingleIssue,
+  updateIssue,
+};

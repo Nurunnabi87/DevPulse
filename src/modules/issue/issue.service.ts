@@ -3,11 +3,13 @@ import pool from "../../config/db";
 import AppError from "../../utils/AppError";
 import { IReporter } from "../user/user.interface";
 import { UserService } from "../user/user.service";
+import { IJwtPayload } from "../auth/auth.interface";
 import {
   ICreateIssuePayload,
   IIssue,
   IIssueQueryParams,
   IIssueWithReporter,
+  IUpdateIssuePayload,
 } from "./issue.interface";
 
 /** Swap reporter_id for an embedded reporter object (no JOIN used). */
@@ -104,4 +106,79 @@ const getSingleIssue = async (id: number): Promise<IIssueWithReporter> => {
   return attachReporter(issue, reporter);
 };
 
-export const IssueService = { createIssue, getAllIssues, getSingleIssue };
+const updateIssue = async (
+  id: number,
+  payload: IUpdateIssuePayload,
+  user: IJwtPayload
+): Promise<IIssue> => {
+  const existing = await pool.query<IIssue>(
+    `SELECT id, title, description, type, status, reporter_id, created_at, updated_at
+     FROM issues WHERE id = $1`,
+    [id]
+  );
+  const issue = existing.rows[0];
+  if (!issue) {
+    throw new AppError(StatusCodes.NOT_FOUND, "Issue not found");
+  }
+
+  // Permission rules
+  if (user.role !== "maintainer") {
+    // Contributor: only own issues, only while still open,
+    // and may never change the workflow status.
+    if (issue.reporter_id !== user.id) {
+      throw new AppError(
+        StatusCodes.FORBIDDEN,
+        "You can only update issues you reported"
+      );
+    }
+    if (issue.status !== "open") {
+      throw new AppError(
+        StatusCodes.CONFLICT,
+        "This issue can no longer be edited because it is not open"
+      );
+    }
+    if (payload.status !== undefined) {
+      throw new AppError(
+        StatusCodes.FORBIDDEN,
+        "Only maintainers can change the issue status"
+      );
+    }
+  }
+
+  // Build the SET clause dynamically from provided fields only
+  const setClauses: string[] = [];
+  const values: unknown[] = [];
+
+  const updatableFields: (keyof IUpdateIssuePayload)[] = [
+    "title",
+    "description",
+    "type",
+    "status",
+  ];
+  for (const field of updatableFields) {
+    if (payload[field] !== undefined) {
+      values.push(payload[field]);
+      setClauses.push(`${field} = $${values.length}`);
+    }
+  }
+
+  // updated_at always refreshed on a successful update
+  setClauses.push(`updated_at = NOW()`);
+
+  values.push(id);
+  const result = await pool.query<IIssue>(
+    `UPDATE issues SET ${setClauses.join(", ")}
+     WHERE id = $${values.length}
+     RETURNING id, title, description, type, status, reporter_id, created_at, updated_at`,
+    values
+  );
+
+  return result.rows[0];
+};
+
+export const IssueService = {
+  createIssue,
+  getAllIssues,
+  getSingleIssue,
+  updateIssue,
+};
