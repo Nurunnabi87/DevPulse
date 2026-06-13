@@ -72,9 +72,23 @@ const updateIssue = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+const deleteIssue = catchAsync(async (req: Request, res: Response) => {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id) || id <= 0) {
+    throw new AppError(StatusCodes.BAD_REQUEST, "Invalid issue id");
+  }
+  await IssueService.deleteIssue(id);
+
+  sendResponse(res, {
+    statusCode: StatusCodes.OK,
+    message: "Issue deleted successfully",
+  });
+});
+
 export const IssueController = {
   createIssue,
   getAllIssues,
   getSingleIssue,
   updateIssue,
+  deleteIssue,
 };

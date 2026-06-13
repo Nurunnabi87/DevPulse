@@ -15,4 +15,7 @@ router.post("/", auth(), IssueController.createIssue);
 // The fine-grained rules live in the service layer.
 router.patch("/:id", auth(), IssueController.updateIssue);
 
+// Delete: maintainers only (enforced by the role middleware)
+router.delete("/:id", auth("maintainer"), IssueController.deleteIssue);
+
 export const IssueRoutes = router;
